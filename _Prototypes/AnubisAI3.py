@@ -4,7 +4,7 @@ import textwrap
 import sqlite3
 from dotenv import load_dotenv
 
-def anpu_talk(user_input, return_output=False):
+def anpu_talk():
     # Load environment variables from a .env file
     load_dotenv()
 
@@ -28,32 +28,31 @@ def anpu_talk(user_input, return_output=False):
     # Define Anubis persona
     anubis_persona = "As the ancient Egyptian god of the dead, I am both mysterious and wise. Ask me anything and I will reveal the secrets of the afterlife."
 
-    # Store input in the conversation database
-    brain_cursor.execute("INSERT INTO conversation (input) VALUES (?)", (user_input,))
-    brain_conn.commit()
+    # Loop to prompt user for input and respond using OpenAI
+    while True:
+        # Prompt user for input
+        user_input = input("Morgan: ")
 
-    # Use Anubis persona to roleplay the response
-    prompt = f"Anubis: {anubis_persona}\nMorgan: {user_input}\nAnubis: "
+        # Store input in the conversation database
+        brain_cursor.execute("INSERT INTO conversation (input) VALUES (?)", (user_input,))
+        brain_conn.commit()
 
-    # Use the prompt to generate a response using OpenAI
-    response = openai.Completion.create(engine=model_engine, prompt=prompt, max_tokens=max_tokens)
+        # Use Anubis persona to roleplay the response
+        prompt = f"Anubis: {anubis_persona}\nMorgan: {user_input}\nAnubis: "
 
-    # Store the response in the conversation database
-    brain_cursor.execute("UPDATE conversation SET output = ? WHERE id = ?", (response.choices[0].text, brain_cursor.lastrowid))
-    brain_conn.commit()
+        # Use the prompt to generate a response using OpenAI
+        response = openai.Completion.create(engine=model_engine, prompt=prompt, max_tokens=max_tokens)
 
-    # Store the input and output in the ontology database
-    mind_cursor.execute("INSERT INTO ontology (statement, response) VALUES (?, ?)", (user_input, response.choices[0].text))
-    mind_conn.commit()
+        # Store the response in the conversation database
+        brain_cursor.execute("UPDATE conversation SET output = ? WHERE id = ?", (response.choices[0].text, brain_cursor.lastrowid))
+        brain_conn.commit()
 
-    # Return the output if requested
-    if return_output:
-        return response.choices[0].text
-    else:
         # Print the response, wrapped at 100 characters
         print("Anubis: " + textwrap.fill(response.choices[0].text, width=100))
 
+        # Store the input and output in the ontology database
+        mind_cursor.execute("INSERT INTO ontology (statement, response) VALUES (?, ?)", (user_input, response.choices[0].text))
+        mind_conn.commit()
+
 if __name__ == "__main__":
-    user_input = input("Enter your message: ")
-    output = anpu_talk(user_input, return_output=True)
-    print("Anubis: " + textwrap.fill(output, width=100))
+    anpu_talk()
