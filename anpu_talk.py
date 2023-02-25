@@ -1,7 +1,7 @@
 import openai
 import os
 import textwrap
-import sqlite3
+from anpu_storage import ConversationStorage, OntologyStorage
 from dotenv import load_dotenv
 
 def anpu_talk(user_input, return_output=False):
@@ -15,22 +15,24 @@ def anpu_talk(user_input, return_output=False):
     model_engine = "text-davinci-002"
     max_tokens = 256
 
-    # Connect to or create the anpu_brain.db database
-    brain_conn = sqlite3.connect("anpu_brain.db")
-    brain_cursor = brain_conn.cursor()
-    brain_cursor.execute('''CREATE TABLE IF NOT EXISTS conversation (id INTEGER PRIMARY KEY AUTOINCREMENT, input TEXT, output TEXT)''')
-
-    # Connect to or create the anpu_mind.db database
-    mind_conn = sqlite3.connect("anpu_mind.db")
-    mind_cursor = mind_conn.cursor()
-    mind_cursor.execute('''CREATE TABLE IF NOT EXISTS ontology (id INTEGER PRIMARY KEY AUTOINCREMENT, statement TEXT, response TEXT)''')
+    # Connect to or create the conversation and ontology databases
+    conversation_storage = ConversationStorage()
+    ontology_storage = OntologyStorage()
 
     # Define Anubis persona
     anubis_persona = "As the ancient Egyptian god of the dead, I am both mysterious and wise. Ask me anything and I will reveal the secrets of the afterlife."
 
+    if not user_input:
+        # If user_input is empty, return a default response
+        default_response = "Please enter a message for me to respond to."
+        if return_output:
+            return default_response
+        else:
+            print("Anubis: " + textwrap.fill(default_response, width=100))
+            return
+
     # Store input in the conversation database
-    brain_cursor.execute("INSERT INTO conversation (input) VALUES (?)", (user_input,))
-    brain_conn.commit()
+    conversation_storage.add_conversation(user_input, "")
 
     # Use Anubis persona to roleplay the response
     prompt = f"Anubis: {anubis_persona}\nMorgan: {user_input}\nAnubis: "
@@ -39,24 +41,20 @@ def anpu_talk(user_input, return_output=False):
     response = openai.Completion.create(engine=model_engine, prompt=prompt, max_tokens=max_tokens)
 
     # Store the response in the conversation database
-    brain_cursor.execute("UPDATE conversation SET output = ? WHERE id = ?", (response.choices[0].text, brain_cursor.lastrowid))
-    brain_conn.commit()
+    conversation_storage.add_conversation("", response.choices[0].text)
 
     # Store the input and output in the ontology database
-    mind_cursor.execute("INSERT INTO ontology (statement, response) VALUES (?, ?)", (user_input, response.choices[0].text))
-    mind_conn.commit()
+    ontology_storage.add_ontology(user_input, response.choices[0].text)
 
     # Use the ontology database to improve the response
-    mind_cursor.execute("SELECT response FROM ontology WHERE statement LIKE ?", ('%' + user_input + '%',))
-    similar_responses = mind_cursor.fetchall()
-    if len(similar_responses) > 0:
-        response_text = similar_responses[0][0]
+    similar_response = ontology_storage.get_similar_responses(user_input)
+    if similar_response is not None:
+        response_text = similar_response
     else:
         response_text = response.choices[0].text
 
     # Store the improved response in the conversation database
-    brain_cursor.execute("UPDATE conversation SET output = ? WHERE id = ?", (response_text, brain_cursor.lastrowid))
-    brain_conn.commit()
+    conversation_storage.add_conversation("", response_text)
 
     # Return the output if requested
     if return_output:

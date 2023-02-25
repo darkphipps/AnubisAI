@@ -27,6 +27,9 @@ def store_voice_sample(sample):
     conn = sqlite3.connect('anpu_speech.db')
     c = conn.cursor()
 
+    # Create the 'voice_samples' table if it does not exist
+    c.execute('''CREATE TABLE IF NOT EXISTS voice_samples (id INTEGER PRIMARY KEY AUTOINCREMENT, sample TEXT)''')
+
     # Insert the voice sample into the 'voice_samples' table
     c.execute('INSERT INTO voice_samples (sample) VALUES (?)', (sample,))
 
@@ -76,7 +79,7 @@ if __name__ == "__main__":
     load_dotenv()
 
     # Set the Google Speech Recognition API key
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.environ
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
 
     # Create the 'voice_samples' table if it doesn't exist
     create_database()

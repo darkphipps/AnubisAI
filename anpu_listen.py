@@ -1,23 +1,14 @@
-import speech_recognition as sr
 import sqlite3
+import speech_recognition as sr
 import winsound
-
-def create_database():
-    # Create or connect to the anpu_speech.db database
-    conn = sqlite3.connect('anpu_speech.db')
-    c = conn.cursor()
-
-    # Create the 'voice_samples' table if it does not exist
-    c.execute('''CREATE TABLE IF NOT EXISTS voice_samples (id INTEGER PRIMARY KEY AUTOINCREMENT, sample TEXT)''')
-
-    # Commit the changes and close the database connection
-    conn.commit()
-    conn.close()
 
 def store_voice_sample(sample):
     # Connect to the anpu_speech.db database
     conn = sqlite3.connect('anpu_speech.db')
     c = conn.cursor()
+
+    # Create the 'voice_samples' table if it does not exist
+    c.execute('''CREATE TABLE IF NOT EXISTS voice_samples (id INTEGER PRIMARY KEY AUTOINCREMENT, sample TEXT)''')
 
     # Insert the voice sample into the 'voice_samples' table
     c.execute('INSERT INTO voice_samples (sample) VALUES (?)', (sample,))
@@ -48,3 +39,8 @@ def listen():
         print("Sorry, I could not understand what you said.")
     except sr.RequestError as e:
         print(f"Sorry, could not request results from Google Speech Recognition service; {e}")
+
+if __name__ == '__main__':
+    while True:
+        user_input = listen()
+        print(f"You said: {user_input}")
