@@ -46,12 +46,24 @@ def anpu_talk(user_input, return_output=False):
     mind_cursor.execute("INSERT INTO ontology (statement, response) VALUES (?, ?)", (user_input, response.choices[0].text))
     mind_conn.commit()
 
+    # Use the ontology database to improve the response
+    mind_cursor.execute("SELECT response FROM ontology WHERE statement LIKE ?", ('%' + user_input + '%',))
+    similar_responses = mind_cursor.fetchall()
+    if len(similar_responses) > 0:
+        response_text = similar_responses[0][0]
+    else:
+        response_text = response.choices[0].text
+
+    # Store the improved response in the conversation database
+    brain_cursor.execute("UPDATE conversation SET output = ? WHERE id = ?", (response_text, brain_cursor.lastrowid))
+    brain_conn.commit()
+
     # Return the output if requested
     if return_output:
-        return response.choices[0].text
+        return response_text
     else:
         # Print the response, wrapped at 100 characters
-        print("Anubis: " + textwrap.fill(response.choices[0].text, width=100))
+        print("Anubis: " + textwrap.fill(response_text, width=100))
 
 if __name__ == "__main__":
     user_input = input("Enter your message: ")

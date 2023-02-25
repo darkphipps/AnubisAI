@@ -1,5 +1,6 @@
 import speech_recognition as sr
 import sqlite3
+import winsound
 
 def create_database():
     # Create or connect to the anpu_speech.db database
@@ -26,6 +27,9 @@ def store_voice_sample(sample):
     conn.close()
 
 def listen():
+    # Load and play the input_ready.mp3 file to indicate that the microphone is listening
+    winsound.PlaySound("input_ready.mp3", winsound.SND_FILENAME)
+
     # Use speech_recognition library to record audio from the microphone
     r = sr.Recognizer()
     with sr.Microphone() as source:
