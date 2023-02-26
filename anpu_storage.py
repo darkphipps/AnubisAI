@@ -35,3 +35,21 @@ class OntologyStorage:
             return rows[0][0]
         else:
             return None
+
+
+class MindStorage:
+    def __init__(self):
+        self.conn = sqlite3.connect("anpu_mind.db")
+        self.cursor = self.conn.cursor()
+        self.cursor.execute(
+            '''CREATE TABLE IF NOT EXISTS keywords (id INTEGER PRIMARY KEY AUTOINCREMENT, keyword TEXT)''')
+
+    def add_keywords(self, keywords):
+        for keyword in keywords:
+            self.cursor.execute("INSERT INTO keywords (keyword) VALUES (?)", (keyword,))
+        self.conn.commit()
+
+    def get_keywords(self):
+        self.cursor.execute("SELECT keyword FROM keywords")
+        rows = self.cursor.fetchall()
+        return [row[0] for row in rows]

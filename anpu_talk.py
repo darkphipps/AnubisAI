@@ -1,7 +1,7 @@
 import openai
 import os
 import textwrap
-from anpu_storage import ConversationStorage, OntologyStorage
+from anpu_storage import ConversationStorage, OntologyStorage, MindStorage
 from dotenv import load_dotenv
 
 def anpu_talk(user_input, return_output=False):
@@ -18,6 +18,7 @@ def anpu_talk(user_input, return_output=False):
     # Connect to or create the conversation and ontology databases
     conversation_storage = ConversationStorage()
     ontology_storage = OntologyStorage()
+    mind_storage = MindStorage()
 
     # Define Anubis persona
     anubis_persona = "As the ancient Egyptian god of the dead, I am both mysterious and wise. Ask me anything and I will reveal the secrets of the afterlife."
@@ -52,6 +53,12 @@ def anpu_talk(user_input, return_output=False):
         response_text = similar_response
     else:
         response_text = response.choices[0].text
+
+    # Use the mind database to improve the response further
+    keywords = mind_storage.get_keywords()
+    for keyword in keywords:
+        if keyword in response_text:
+            response_text = response_text.replace(keyword, f"[{keyword}]")
 
     # Store the improved response in the conversation database
     conversation_storage.add_conversation("", response_text)

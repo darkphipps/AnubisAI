@@ -34,10 +34,7 @@ def speak_response(response):
     Speaks the response out loud or prints it to the console,
     depending on the current output mode.
     """
-    if mode == "s":
-        anpu_speak.speak(response)
-    else:
-        print("Anubis: " + textwrap.fill(response, width=100))
+    print("Anubis: " + textwrap.fill(response, width=100))
 
 
 # Prompt the user to select a mode of input
