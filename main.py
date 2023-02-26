@@ -1,7 +1,8 @@
 import anpu_talk
 import anpu_listen
-import textwrap
 import anpu_speak
+import textwrap
+
 
 def get_user_input():
     """
@@ -37,10 +38,14 @@ def speak_response(response):
     global mode
 
     if mode == "s":
-        print("Anubis: " + textwrap.fill(response, width=100))
+        print("Anubis: ")
+        for line in textwrap.wrap(response, width=75):
+            print(line)
         anpu_speak.speak(response)
     else:
-        print("Anubis: " + textwrap.fill(response, width=100))
+        print("Anubis: ")
+        for line in textwrap.wrap(response, width=75):
+            print(line)
 
 
 # Prompt the user to select a mode of input

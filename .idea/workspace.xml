@@ -7,9 +7,11 @@
     <list default="true" id="b15b120c-86c8-4abb-b99a-2672a974868f" name="Changes" comment="Adding all files for AI">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anpu_brain.db" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/anpu_mind.db" beforeDir="false" afterPath="$PROJECT_DIR$/anpu_mind.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anpu_listen.py" beforeDir="false" afterPath="$PROJECT_DIR$/anpu_listen.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anpu_mind.db" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/anpu_persona.py" beforeDir="false" afterPath="$PROJECT_DIR$/anpu_persona.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anpu_speech.db" beforeDir="false" afterPath="$PROJECT_DIR$/anpu_speech.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anpu_talk.py" beforeDir="false" afterPath="$PROJECT_DIR$/anpu_talk.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -221,7 +223,21 @@
       <option name="project" value="LOCAL" />
       <updated>1677351621609</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Adding all files for AI">
+      <created>1677444541896</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1677444541896</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Adding all files for AI">
+      <created>1677444626262</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1677444626262</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">

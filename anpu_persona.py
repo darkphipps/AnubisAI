@@ -30,6 +30,7 @@ def get_anubis_persona():
 
         # Set the new Anubis persona based on the OpenAI response
         anubis_persona = response.choices[0].text.strip()
+        anubis_persona = anubis_persona.replace("god of death and the afterlife", "god of the afterlife")
 
         # Store the new Anubis persona in the ontology database
         ontology_storage.add_ontology("Anubis persona", anubis_persona)

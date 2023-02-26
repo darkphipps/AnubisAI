@@ -25,7 +25,7 @@ def listen():
     r = sr.Recognizer()
     with sr.Microphone() as source:
         print("Speak now...")
-        audio = r.listen(source, phrase_time_limit=5)
+        audio = r.listen(source)
 
     # Use Google Speech Recognition to convert the audio to text
     try:

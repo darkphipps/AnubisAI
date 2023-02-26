@@ -5,21 +5,23 @@ from anpu_storage import ConversationStorage, OntologyStorage, MindStorage
 from dotenv import load_dotenv
 from anpu_persona import get_anubis_persona
 
+# Load environment variables from a .env file
+load_dotenv()
+
+# Authenticate with OpenAI using the API key
+openai.api_key = os.environ.get('OPENAI_API_KEY')
+
+# Set OpenAI model and parameters
+model_engine = "text-davinci-002"
+max_tokens = 256
+
+# Connect to or create the conversation and ontology databases
+conversation_storage = ConversationStorage()
+ontology_storage = OntologyStorage()
+mind_storage = MindStorage()
+
 def anpu_talk(user_input, return_output=False):
-    # Load environment variables from a .env file
-    load_dotenv()
-
-    # Authenticate with OpenAI using the API key
-    openai.api_key = os.environ.get('OPENAI_API_KEY')
-
-    # Set OpenAI model and parameters
-    model_engine = "text-davinci-002"
-    max_tokens = 256
-
-    # Connect to or create the conversation and ontology databases
-    conversation_storage = ConversationStorage()
-    ontology_storage = OntologyStorage()
-    mind_storage = MindStorage()
+    global anubis_persona
 
     if not user_input:
         # If user_input is empty, return a default response
@@ -34,7 +36,11 @@ def anpu_talk(user_input, return_output=False):
     conversation_storage.add_conversation(user_input, "")
 
     # Use Anubis persona to roleplay the response
-    prompt = f"Anubis: {get_anubis_persona()}\nMorgan: {user_input}\nAnubis: "
+    if 'who am i' in user_input or 'whats my name' in user_input:
+        persona = "You are Morgan."
+    else:
+        persona = get_anubis_persona().replace("the Egyptian god of death and the afterlife", "the god of the dead")
+    prompt = f"Anubis: {persona}\nMorgan: {user_input}\nAnubis: "
 
     # Use the prompt to generate a response using OpenAI
     response = openai.Completion.create(engine=model_engine, prompt=prompt, max_tokens=max_tokens)
@@ -47,7 +53,7 @@ def anpu_talk(user_input, return_output=False):
 
     # Use the ontology database to improve the response
     similar_response = ontology_storage.get_similar_responses(user_input)
-    if similar_response is not None:
+    if similar_response is not None and similar_response != response.choices[0].text:
         response_text = similar_response
     else:
         response_text = response.choices[0].text
@@ -68,7 +74,12 @@ def anpu_talk(user_input, return_output=False):
         # Print the response, wrapped at 100 characters
         print("Anubis: " + textwrap.fill(response_text, width=100))
 
+
 if __name__ == "__main__":
-    user_input = input("Enter your message: ")
-    output = anpu_talk(user_input, return_output=True)
-    print("Anubis: " + textwrap.fill(output, width=100))
+    while True:
+        mode = input("Enter 's' to use speech recognition, or 't' to type your input: ")
+        if mode == 's':
+            user_input = anpu_listen.listen()
+        else:
+            user_input = input("Enter your message: ")
+        anpu_talk(user_input)
