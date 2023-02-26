@@ -17,6 +17,25 @@ max_tokens = 256
 # Connect to or create the ontology database
 ontology_storage = OntologyStorage()
 
+import openai
+import os
+import textwrap
+from anpu_storage import OntologyStorage
+from dotenv import load_dotenv
+
+# Load environment variables from a .env file
+load_dotenv()
+
+# Authenticate with OpenAI using the API key
+openai.api_key = os.environ.get('OPENAI_API_KEY')
+
+# Set OpenAI model and parameters
+model_engine = "text-davinci-002"
+max_tokens = 256
+
+# Connect to or create the ontology database
+ontology_storage = OntologyStorage()
+
 def get_anubis_persona():
     # Get the current Anubis persona from the ontology database
     anubis_persona = ontology_storage.get_similar_responses("Anubis persona")
@@ -37,3 +56,4 @@ def get_anubis_persona():
 
     # Return the Anubis persona
     return anubis_persona
+

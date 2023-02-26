@@ -1,6 +1,5 @@
 import sqlite3
 
-
 class ConversationStorage:
     def __init__(self):
         self.conn = sqlite3.connect("anpu_brain.db")
@@ -35,7 +34,6 @@ class OntologyStorage:
             return rows[0][0]
         else:
             return None
-
 
 class MindStorage:
     def __init__(self):

@@ -74,6 +74,21 @@ def get_input():
 
     return result[0] if result else None
 
+def speak_response(anpu_think):
+    """
+    Speaks the response out loud or prints it to the console,
+    depending on the current output mode.
+    """
+    if anpu_think.output_format == "voice":
+        print("Anubis: ")
+        for line in textwrap.wrap(anpu_think.response, width=75):
+            print(line)
+        speak(anpu_think.response)
+    else:
+        print("Anubis: ")
+        for line in textwrap.wrap(anpu_think.response, width=75):
+            print(line)
+
 if __name__ == "__main__":
     # Load environment variables from a .env file
     load_dotenv()

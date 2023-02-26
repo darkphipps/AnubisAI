@@ -4,6 +4,8 @@ import textwrap
 from anpu_storage import ConversationStorage, OntologyStorage, MindStorage
 from dotenv import load_dotenv
 from anpu_persona import get_anubis_persona
+from anpu_think import extract_keywords, stop_words
+
 
 # Load environment variables from a .env file
 load_dotenv()
@@ -15,7 +17,7 @@ openai.api_key = os.environ.get('OPENAI_API_KEY')
 model_engine = "text-davinci-002"
 max_tokens = 256
 
-# Connect to or create the conversation and ontology databases
+# Connect to or create the conversation, ontology, and mind databases
 conversation_storage = ConversationStorage()
 ontology_storage = OntologyStorage()
 mind_storage = MindStorage()
@@ -34,6 +36,10 @@ def anpu_talk(user_input, return_output=False):
 
     # Store input in the conversation database
     conversation_storage.add_conversation(user_input, "")
+
+    # Extract keywords from last input and add them to the mind database
+    keywords = extract_keywords(user_input, stop_words)
+    mind_storage.add_keywords(keywords)
 
     # Use Anubis persona to roleplay the response
     if 'who am i' in user_input or 'whats my name' in user_input:
@@ -62,7 +68,7 @@ def anpu_talk(user_input, return_output=False):
     keywords = mind_storage.get_keywords()
     for keyword in keywords:
         if keyword in response_text:
-            response_text = response_text.replace(keyword, f"[{keyword}]")
+            response_text = response_text.replace(f"[{keyword}]", keyword)
 
     # Store the improved response in the conversation database
     conversation_storage.add_conversation("", response_text)
@@ -73,7 +79,6 @@ def anpu_talk(user_input, return_output=False):
     else:
         # Print the response, wrapped at 100 characters
         print("Anubis: " + textwrap.fill(response_text, width=100))
-
 
 if __name__ == "__main__":
     while True:
