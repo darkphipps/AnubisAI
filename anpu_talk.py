@@ -3,6 +3,7 @@ import os
 import textwrap
 from anpu_storage import ConversationStorage, OntologyStorage, MindStorage
 from dotenv import load_dotenv
+from anpu_persona import get_anubis_persona
 
 def anpu_talk(user_input, return_output=False):
     # Load environment variables from a .env file
@@ -20,9 +21,6 @@ def anpu_talk(user_input, return_output=False):
     ontology_storage = OntologyStorage()
     mind_storage = MindStorage()
 
-    # Define Anubis persona
-    anubis_persona = "As the ancient Egyptian god of the dead, I am both mysterious and wise. Ask me anything and I will reveal the secrets of the afterlife."
-
     if not user_input:
         # If user_input is empty, return a default response
         default_response = "Please enter a message for me to respond to."
@@ -36,7 +34,7 @@ def anpu_talk(user_input, return_output=False):
     conversation_storage.add_conversation(user_input, "")
 
     # Use Anubis persona to roleplay the response
-    prompt = f"Anubis: {anubis_persona}\nMorgan: {user_input}\nAnubis: "
+    prompt = f"Anubis: {get_anubis_persona()}\nMorgan: {user_input}\nAnubis: "
 
     # Use the prompt to generate a response using OpenAI
     response = openai.Completion.create(engine=model_engine, prompt=prompt, max_tokens=max_tokens)

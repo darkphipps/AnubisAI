@@ -6,10 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="b15b120c-86c8-4abb-b99a-2672a974868f" name="Changes" comment="Adding all files for AI">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anpu_brain.db" beforeDir="false" afterPath="$PROJECT_DIR$/anpu_brain.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anpu_brain.db" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/anpu_mind.db" beforeDir="false" afterPath="$PROJECT_DIR$/anpu_mind.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anpu_speech.db" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/anpu_storage.py" beforeDir="false" afterPath="$PROJECT_DIR$/anpu_storage.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anpu_talk.py" beforeDir="false" afterPath="$PROJECT_DIR$/anpu_talk.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
