@@ -9,7 +9,7 @@
       <change beforePath="$PROJECT_DIR$/anpu_conversations.db" beforeDir="false" afterPath="$PROJECT_DIR$/anpu_conversations.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anpu_mind.db" beforeDir="false" afterPath="$PROJECT_DIR$/anpu_mind.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anpu_ontology.db" beforeDir="false" afterPath="$PROJECT_DIR$/anpu_ontology.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anpu_persona.py" beforeDir="false" afterPath="$PROJECT_DIR$/anpu_persona.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anpu_speech.db" beforeDir="false" afterPath="$PROJECT_DIR$/anpu_speech.db" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -256,7 +256,14 @@
       <option name="project" value="LOCAL" />
       <updated>1677459162334</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="Adding all files for AI">
+      <created>1677459894593</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1677459894593</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
