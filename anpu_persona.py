@@ -17,23 +17,24 @@ max_tokens = 256
 # Connect to or create the ontology database
 ontology_storage = OntologyStorage()
 
-def get_anubis_persona(name="Morgan"):
-    # Get the current Anubis persona from the ontology database
-    anubis_persona = ontology_storage.get_similar_responses("Anubis persona")
+def get_persona(name="Morgan", god="Anubis"):
+    # Get the current persona for the specified god from the ontology database
+    persona = ontology_storage.get_similar_responses(f"{god} persona")
 
     # If the persona is not found in the ontology database, generate a new persona using OpenAI
-    if anubis_persona is None:
-        # Set OpenAI prompt to generate a new Anubis persona
-        prompt = f"Generate a new Anubis persona for {name}:\nAnubis: "
+    if persona is None:
+        # Set OpenAI prompt to generate a new persona for the specified god
+        prompt = f"Generate a new {god} persona for {name}:\n{god}: "
 
         response = openai.Completion.create(engine=model_engine, prompt=prompt, max_tokens=max_tokens)
 
-        # Set the new Anubis persona based on the OpenAI response
-        anubis_persona = response.choices[0].text.strip()
-        anubis_persona = anubis_persona.replace("god of death and the afterlife", "god of the afterlife")
+        # Set the new persona based on the OpenAI response
+        persona = response.choices[0].text.strip()
+        persona = persona.replace("god of death and the afterlife", "god of the afterlife")
 
-        # Store the new Anubis persona in the ontology database
-        ontology_storage.add_ontology("Anubis persona", anubis_persona)
+        # Store the new persona in the ontology database
+        ontology_storage.add_ontology(f"{god} persona", persona)
 
-    # Return the Anubis persona
-    return anubis_persona
+    # Return the persona
+    return persona
+

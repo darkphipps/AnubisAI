@@ -1,12 +1,8 @@
 import openai
 import os
 import textwrap
-import random
 from anpu_storage import ConversationStorage, OntologyStorage, MindStorage
 from dotenv import load_dotenv
-from anpu_persona import get_anubis_persona
-from anpu_think import extract_keywords, stop_words, extract_ontology_topics
-
 
 # Load environment variables from a .env file
 load_dotenv()
@@ -23,8 +19,14 @@ conversation_storage = ConversationStorage()
 ontology_storage = OntologyStorage()
 mind_storage = MindStorage()
 
+# List of persona/god names to choose from
+persona_names = ["Anubis", "Osiris", "Ra", "Horus", "Set"]
+
+# Set the initial persona to be Anubis
+persona = persona_names[0]
+
 def anpu_talk(user_input, return_output=False):
-    global anubis_persona
+    global persona
 
     if not user_input:
         # If user_input is empty, return a default response
@@ -32,7 +34,7 @@ def anpu_talk(user_input, return_output=False):
         if return_output:
             return default_response
         else:
-            print("Anubis: " + textwrap.fill(default_response, width=100))
+            print(persona + ": " + textwrap.fill(default_response, width=100))
             return
 
     # Store input in the conversation database
@@ -42,12 +44,8 @@ def anpu_talk(user_input, return_output=False):
     keywords = extract_keywords(user_input, stop_words)
     mind_storage.add_keywords(keywords)
 
-    # Use Anubis persona to roleplay the response
-    if 'who am i' in user_input or 'whats my name' in user_input:
-        persona = "You are Morgan."
-    else:
-        persona = get_anubis_persona().replace("the Egyptian god of death and the afterlife", "the god of the dead")
-    prompt = f"Anubis: {persona}\nMorgan: {user_input}\nAnubis: "
+    # Use the current persona to roleplay the response
+    prompt = f"{persona}: {user_input}\n{persona}: "
 
     # Use the prompt to generate a response using OpenAI
     response = openai.Completion.create(engine=model_engine, prompt=prompt, max_tokens=max_tokens)
@@ -84,15 +82,25 @@ def anpu_talk(user_input, return_output=False):
         return response_text
     else:
         # Print the response, wrapped at 100 characters
-        print("Anubis: " + textwrap.fill(response_text, width=100))
+        print(persona + ": " + textwrap.fill(response_text, width=100))
 
 
 if __name__ == "__main__":
     while True:
+        # Prompt the user to enter a god name to switch to
+        switch_god = input("Enter a god name to switch to, or press enter to continue with the current god: ")
 
+        if switch_god:
+            # If the user entered a god name, get the corresponding persona and set it as the current persona
+            persona = get_persona(god=switch_god)
+
+        # Prompt the user to enter a message
         mode = input("Enter 's' to use speech recognition, or 't' to type your input: ")
         if mode == 's':
             user_input = anpu_listen.listen()
         else:
             user_input = input("Enter your message: ")
+
+        # Process the user input using the current persona
         anpu_talk(user_input)
+
