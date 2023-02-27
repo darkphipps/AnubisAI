@@ -1,10 +1,11 @@
 import openai
 import os
 import textwrap
+import random
 from anpu_storage import ConversationStorage, OntologyStorage, MindStorage
 from dotenv import load_dotenv
 from anpu_persona import get_anubis_persona
-from anpu_think import extract_keywords, stop_words
+from anpu_think import extract_keywords, stop_words, extract_ontology_topics
 
 
 # Load environment variables from a .env file
@@ -70,6 +71,11 @@ def anpu_talk(user_input, return_output=False):
         if keyword in response_text:
             response_text = response_text.replace(f"[{keyword}]", keyword)
 
+    # Only include references to Egyptian mythology if the user has asked about it
+    egyptian_topics_discussed = ontology_storage.has_ontology_topic("Egyptian mythology")
+    if egyptian_topics_discussed:
+        response_text = response_text.replace("the Egyptian god of death and the afterlife", "the god of the dead")
+
     # Store the improved response in the conversation database
     conversation_storage.add_conversation("", response_text)
 
@@ -80,8 +86,10 @@ def anpu_talk(user_input, return_output=False):
         # Print the response, wrapped at 100 characters
         print("Anubis: " + textwrap.fill(response_text, width=100))
 
+
 if __name__ == "__main__":
     while True:
+
         mode = input("Enter 's' to use speech recognition, or 't' to type your input: ")
         if mode == 's':
             user_input = anpu_listen.listen()

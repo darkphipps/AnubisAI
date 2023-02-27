@@ -80,6 +80,12 @@ def extract_keywords(text, stop_words):
     # Return unique keywords
     return set(words)
 
+def extract_ontology_topics(text):
+    # Extract topics surrounded by brackets
+    pattern = r"\[([^\]]+)\]"
+    matches = re.findall(pattern, text)
+    return matches
+
 
 def anpu_think(response, user_input):
     # Extract keywords from user input and add them to the mind database
