@@ -4,8 +4,12 @@ import sqlite3
 import textwrap
 from dotenv import load_dotenv
 from anpu_extract import extract_keywords
-from anpu_persona import get_persona
 from anpu_storage import OntologyStorage, MindStorage, ConversationStorage
+from anpu_persona import get_persona
+from anpu_anubis_chat import chat_with_anubis
+import anpu_utils
+import anpu_god_chat
+from anpu_persona import get_persona_description
 
 # Load environment variables from a .env file
 load_dotenv()
@@ -26,14 +30,19 @@ conversation_storage = ConversationStorage()
 stop_words_file = os.path.join(os.path.dirname(__file__), "anpu_stopwords.txt")
 with open(stop_words_file, "r") as f:
     stop_words = set(f.read().splitlines())
-
-
 def generate_openai_prompt(user_input, persona_name, stop_words=None):
     """
-    Generates an OpenAI prompt based on the user input and persona name.
+    Generates an OpenAI prompt based on the user input and persona name,
+    including previous conversation history if available.
     """
-    persona = get_persona(persona_name)
-    prompt_prefix = f"{persona}\n{user_input}\n"
+    persona_description = anpu_utils.get_persona_description(persona_name)
+    prompt_prefix = f"{persona_description}\n{user_input}\n"
+
+    # Retrieve previous conversation history from the database
+    conversation_history = conversation_storage.get_conversation_history()
+    if conversation_history:
+        prev_input, prev_response = conversation_history[-1]
+        prompt_prefix += f"Last time you said '{prev_input}', and I responded '{prev_response}'.\n"
 
     # Generate prompt suffix
     if ontology_storage.has_ontology_topic("Egyptian mythology"):
@@ -47,13 +56,14 @@ def generate_openai_prompt(user_input, persona_name, stop_words=None):
     return prompt
 
 
+
 def generate_response(user_input, persona_name="Anubis", max_tokens=50, stop_words=None, keywords=None):
     if stop_words is None:
         stop_words = set()
     if keywords is None:
         keywords = []
 
-    # rest of the function code here...
+    # Generate prompt using persona and user input
     prompt = generate_openai_prompt(user_input, persona_name, stop_words)
 
     # Generate response using OpenAI API
@@ -91,6 +101,7 @@ def improve_response_with_mind(response_text, persona_name="Anubis"):
     if improved_response is not None:
         response_text = improved_response
     return response_text
+
 def store_in_ontology(user_input, response_text, ontology_storage_conn):
     # Check if the chat_logs table exists in the ontology storage connection
     c = ontology_storage_conn.cursor()
@@ -113,11 +124,9 @@ def store_in_ontology(user_input, response_text, ontology_storage_conn):
     # Commit the transaction
     ontology_storage_conn.commit()
 
-def anpu_talk(user_input, persona=None, default_persona_name="Anubis"):
-    if persona is None:
+def anpu_talk(user_input, persona_name=None, default_persona_name="Anubis"):
+    if persona_name is None:
         persona_name = default_persona_name
-    else:
-        persona_name = persona
 
     # Get keywords for the persona
     mind_storage = MindStorage()
@@ -125,6 +134,7 @@ def anpu_talk(user_input, persona=None, default_persona_name="Anubis"):
     keywords = keywords_str.split(",") if keywords_str else []
 
     # Add user input to conversation log
+    conversation_storage = ConversationStorage()
     conversation_storage.add_conversation(user_input, "")
 
     # Check if user input matches any stored responses
@@ -134,8 +144,10 @@ def anpu_talk(user_input, persona=None, default_persona_name="Anubis"):
         conversation_storage.add_conversation(user_input, improved_response)
         return improved_response
 
-    # Otherwise, generate a new response using the persona ontology
-    response_text = generate_response(user_input, persona_name, max_tokens, stop_words, keywords)
+    # Otherwise, generate a new response using the persona ontology and persona chat
+    persona_chat = anpu_god_chat.chat(persona_name, user_input)
+    prompt = f"{persona_chat}\nUser: {user_input}\n{persona_name}: "
+    response_text = generate_response(prompt, max_tokens)
 
     # Improve response with ontology
     response_text = improve_response_with_ontology(user_input, response_text)
@@ -145,5 +157,14 @@ def anpu_talk(user_input, persona=None, default_persona_name="Anubis"):
 
     # Add response to conversation log
     conversation_storage.add_conversation(user_input, response_text)
+
+    # Check if the current response is the same as the previous response
+    prev_response = conversation_storage.get_previous_response(user_input)
+    if prev_response and response_text.strip() == prev_response[0].strip():
+        # If so, generate a new response
+        return anpu_talk(user_input, persona_name=persona_name, default_persona_name=default_persona_name)
+
+    # Store the conversation in the ontology database
+    store_in_ontology(user_input, response_text, ontology_storage.conn)
 
     return response_text

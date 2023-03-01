@@ -83,14 +83,67 @@ def create_or_reuse_database():
     conn.commit()
 
     return conn
-
 class ConversationStorage:
-    """
-    Stores and retrieves conversations in a SQLite database.
-    """
-    def __init__(self, database="anpu_conversations.db"):
-        self.conn = sqlite3.connect(database)
+    def __init__(self, ontology_storage_conn=None):
+        self.conn = ontology_storage_conn or sqlite3.connect(os.path.join(os.path.dirname(__file__), "anpu_ontology.db"))
+        self._create_table_if_not_exists()
         self.create_table()
+
+    def _create_table_if_not_exists(self):
+        """
+        Creates the conversation_logs table if it doesn't exist.
+        """
+        c = self.conn.cursor()
+        c.execute('''
+                  CREATE TABLE IF NOT EXISTS conversation_logs 
+                  (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                  user_input TEXT, 
+                  response_text TEXT);
+                  ''')
+        self.conn.commit()
+
+    def add_conversation_log(self, user_input, response_text):
+        """
+        Adds a conversation to the conversation_logs table.
+        """
+        c = self.conn.cursor()
+        c.execute("INSERT INTO conversation_logs (user_input, response_text) VALUES (?, ?)", (user_input, response_text))
+        self.conn.commit()
+
+    def add_conversation(self, user_input, response_text):
+        """
+        Adds a conversation to the conversation_logs table.
+        """
+        c = self.conn.cursor()
+        c.execute("INSERT INTO conversation_logs (user_input, response_text) VALUES (?, ?)", (user_input, response_text))
+        self.conn.commit()
+
+    def get_conversation_history(self):
+        """
+        Returns a list of all conversations in the conversation_logs table.
+        """
+        c = self.conn.cursor()
+        c.execute("SELECT * FROM conversation_logs")
+        conversations = c.fetchall()
+        return conversations
+
+    def get_previous_response(self, user_input):
+        """
+        Returns the most recent response to the given user input.
+        """
+        c = self.conn.cursor()
+        c.execute("SELECT response_text FROM conversation_logs WHERE user_input = ? ORDER BY id DESC LIMIT 1", (user_input,))
+        prev_response = c.fetchone()
+        return prev_response
+
+    def clear_conversation_history(self):
+        """
+        Deletes all conversations in the conversation_logs table.
+        """
+        c = self.conn.cursor()
+        c.execute("DELETE FROM conversation_logs")
+        self.conn.commit()
+
 
     def create_table(self):
         """
@@ -118,6 +171,16 @@ class ConversationStorage:
         c = self.conn.cursor()
         c.execute("SELECT * FROM conversations")
         return c.fetchall()
+
+    def get_previous_response(self, user_input):
+        """
+        Retrieves the previous response from the database based on the user input.
+        """
+        c = self.conn.cursor()
+        c.execute("SELECT response_text FROM conversations WHERE user_input=?", (user_input,))
+        return c.fetchone()
+
+
 
 class AnpuStorage:
     def __init__(self):
@@ -207,6 +270,11 @@ class OntologyStorage:
         self.cursor.execute(
             '''CREATE TABLE IF NOT EXISTS ontology (id INTEGER PRIMARY KEY AUTOINCREMENT, input TEXT, output TEXT)''')
 
+    def add_conversation(self, input_text, response_text):
+        conversation = {'input': input_text, 'response': response_text}
+        self.cursor.execute("INSERT INTO ontology (input, output) VALUES (?, ?)", (input_text, response_text))
+        self.conn.commit()
+
     def add_ontology(self, input_text, output_text):
         # Store the input and output texts in the ontology database
         self.cursor.execute("INSERT INTO ontology (input, output) VALUES (?, ?)", (input_text, output_text))
@@ -215,21 +283,25 @@ class OntologyStorage:
         # Print a message to indicate that the input and output texts were stored
         print(f"Stored '{input_text}' and '{output_text}' in the ontology database.")
 
-    def get_similar_responses(self, input_text):
-        self.cursor.execute("SELECT output FROM ontology")
+    def get_similar_responses(self, response_text):
+        # Retrieve all non-null responses from the database
+        self.cursor.execute("SELECT output FROM ontology WHERE output IS NOT NULL")
         rows = self.cursor.fetchall()
+
+        # Calculate similarity scores for each stored response
         similarity_scores = []
         for row in rows:
-            similarity_score = calculate_similarity(input_text, row[0])
+            similarity_score = calculate_similarity(response_text, row[0])
             similarity_scores.append((similarity_score, row[0]))
 
-        # Sort by similarity score (higher score first)
+        # Sort the responses by similarity score in descending order
         similarity_scores.sort(reverse=True)
 
-        # Return the response with the highest similarity score
+        # Return the response with the highest similarity score, if one exists
         if similarity_scores:
             return similarity_scores[0][1]
-        return None
+        else:
+            return None
 
     def organize_ontology(self, keywords, threshold=2):
         input_patterns = []
@@ -289,3 +361,29 @@ def extract_ontology_topics(text):
     pattern = r"\[([^\]]+)\]"
     matches = re.findall(pattern, text)
     return matches
+class MemoryStorage:
+    def __init__(self):
+        self.conn = sqlite3.connect("anpu_memory.db")
+        self.cursor = self.conn.cursor()
+        self.cursor.execute(
+            '''CREATE TABLE IF NOT EXISTS memory (id INTEGER PRIMARY KEY AUTOINCREMENT, user_input TEXT, response_text TEXT)'''
+        )
+
+    def add_memory(self, user_input, response_text):
+        self.cursor.execute("INSERT INTO memory (user_input, response_text) VALUES (?, ?)", (user_input, response_text))
+        self.conn.commit()
+
+    def get_last_memory(self):
+        self.cursor.execute("SELECT user_input, response_text FROM memory ORDER BY id DESC LIMIT 1")
+        row = self.cursor.fetchone()
+        if row:
+            return row[0], row[1]
+        return None, None
+
+
+def get_ontology_info(topic):
+    info = ontology_storage.get_similar_responses(topic)
+    if info is None:
+        return ""
+    else:
+        return info

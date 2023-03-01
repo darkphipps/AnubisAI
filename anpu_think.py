@@ -168,7 +168,7 @@ def anpu_think(user_input):
 
     # Set OpenAI model and parameters
     model_engine = "text-davinci-002"
-    max_tokens = 256
+    max_tokens = 64
 
     # Create an instance of MindStorage
     mind_storage = MindStorage()

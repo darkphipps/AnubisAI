@@ -7,17 +7,25 @@ from anpu_storage import create_or_reuse_database, OntologyStorage, MindStorage
 import pyttsx3
 from anpu_storage import AnpuStorage
 import anpu_god_chat
-from anpu_storage import create_or_reuse_database, OntologyStorage, MindStorage, ConversationStorage
-
 
 # Set speaker name
 speaker_name = "Morgan"
 
 # Create or reuse the anpu_conversations.db database
 create_or_reuse_database()
+
 # Prompt the user for persona name
-persona_name = input("Enter the name of the god you want to generate a persona for (default: Anubis): ") or "Anubis"
-persona = anpu_god_chat.get_persona(persona_name=persona_name)
+while True:
+    persona_name = input("Enter the name of the god you want to generate a persona for (default: Anubis): ")
+    if not persona_name:
+        persona_name = "Anubis"
+        break
+    else:
+        persona = anpu_god_chat.get_persona(persona_name=persona_name)
+        if persona:
+            break
+        else:
+            print(f"Invalid persona name '{persona_name}'. Please try again.")
 
 # Prompt the user for input mode
 while True:
@@ -32,7 +40,7 @@ if mode == "s":
 else:
     output_format = "text"
 
-def speak_response(response_text, mode, speaker_name="Morgan"):
+def speak_response(response_text, mode, speaker_name):
     """
     Speaks or prints the response based on the selected output format.
     """
@@ -42,9 +50,6 @@ def speak_response(response_text, mode, speaker_name="Morgan"):
     else:
         # Print the response
         print(response_text)
-
-
-
 
 
 def get_user_input():
@@ -81,7 +86,7 @@ while True:
     user_input = get_user_input()
 
     # Pass the user input and persona to the AnpuTalk function and get the response
-    response_text = anpu_talk.anpu_talk(user_input, persona=persona)
+    response_text = anpu_talk.anpu_talk(user_input, persona_name=persona_name)
 
     # Store the conversation in the database
     storage = AnpuStorage()

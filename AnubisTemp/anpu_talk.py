@@ -13,7 +13,7 @@ def anpu_talk(user_input, return_output=False):
 
     # Set OpenAI model and parameters
     model_engine = "text-davinci-002"
-    max_tokens = 256
+    max_tokens = 64
 
     # Connect to or create the anpu_brain.db database
     brain_conn = sqlite3.connect("anpu_brain.db")
