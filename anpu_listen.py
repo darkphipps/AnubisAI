@@ -18,13 +18,15 @@ def store_voice_sample(sample):
     conn.close()
 
 def listen():
-    # Load and play the input_ready.mp3 file to indicate that the microphone is listening
-    winsound.PlaySound("input_ready.mp3", winsound.SND_FILENAME)
+    # Use winsound library to play a beep sound to indicate that the microphone is listening
+    duration = 500  # milliseconds
+    freq = 440  # Hz
+    winsound.Beep(freq, duration)
 
     # Use speech_recognition library to record audio from the microphone
     r = sr.Recognizer()
     with sr.Microphone() as source:
-        print("Speak now...")
+        print("Morgan, speak now...")
         audio = r.listen(source)
 
     # Use Google Speech Recognition to convert the audio to text
@@ -40,7 +42,7 @@ def listen():
     except sr.RequestError as e:
         print(f"Sorry, could not request results from Google Speech Recognition service; {e}")
 
-if __name__ == '__main__':
-    while True:
-        user_input = listen()
-        print(f"You said: {user_input}")
+def listen_text():
+    user_input = input("Enter your message: ")
+
+    return user_input

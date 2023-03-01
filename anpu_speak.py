@@ -2,13 +2,23 @@ import pyttsx3
 import sqlite3
 from dotenv import load_dotenv
 import os
-from anpu_listen import listen
+import textwrap
+import speech_recognition as sr
+import anpu_think
 
-def speak(text):
+
+def speak(text, speaker_name=None):
     # Use pyttsx3 library to speak the text
     engine = pyttsx3.init()
+    if speaker_name:
+        voices = engine.getProperty('voices')
+        for voice in voices:
+            if speaker_name.lower() in voice.name.lower():
+                engine.setProperty('voice', voice.id)
+                break
     engine.say(text)
     engine.runAndWait()
+
 
 def create_database():
     # Create or connect to the anpu_speech.db database
@@ -21,6 +31,7 @@ def create_database():
     # Commit the changes and close the database connection
     conn.commit()
     conn.close()
+
 
 def store_voice_sample(sample):
     # Connect to the anpu_speech.db database
@@ -36,6 +47,7 @@ def store_voice_sample(sample):
     # Commit the changes and close the database connection
     conn.commit()
     conn.close()
+
 
 def train_voice_recognition():
     # Connect to the anpu_speech.db database
@@ -60,6 +72,7 @@ def train_voice_recognition():
     conn.commit()
     conn.close()
 
+
 def get_input():
     # Create or connect to the anpu_speech.db database
     conn = sqlite3.connect('anpu_speech.db')
@@ -74,24 +87,41 @@ def get_input():
 
     return result[0] if result else None
 
-def speak_response(anpu_think):
+
+def speak_response(response, persona_name="Anubis", mode="text", wrap_length=80, speaker_name=None):
     """
-    Speaks the response out loud or prints it to the console,
-    depending on the current output mode.
+    Speak the response using text-to-speech or print it to the console.
+
+    :param response: The response to be spoken or printed
+
+    :param response: The response to be spoken or printed.
+    :param persona_name: The name of the persona to use when speaking.
+    :param mode: The mode to use when responding. Either "text" or "voice".
+    :param wrap_length: The maximum length of each line when wrapping text.
     """
-    if anpu_think.output_format == "voice":
-        print("Anubis: ")
-        for line in textwrap.wrap(anpu_think.response, width=75):
-            print(line)
-        speak(anpu_think.response)
-    else:
-        print("Anubis: ")
-        for line in textwrap.wrap(anpu_think.response, width=75):
-            print(line)
+    if mode == "text":
+        wrapped_response = textwrap.fill(response, wrap_length)
+        print(f"{persona_name}: {wrapped_response}")
+    elif mode == "voice":
+        engine = pyttsx3.init()
+        voices = engine.getProperty('voices')
+        speaker_name = persona_name
+        for voice in voices:
+            if persona_name.lower() in voice.name.lower():
+                speaker_name = voice.name
+                engine.setProperty('voice', voice.id)
+                break
+        wrapped_response = textwrap.fill(response, wrap_length)
+        engine.say(wrapped_response)
+        engine.runAndWait()
+
 
 if __name__ == "__main__":
     # Load environment variables from a .env file
     load_dotenv()
+
+    # Set the Google Speech Recognition API key
+
 
     # Set the Google Speech Recognition API key
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")

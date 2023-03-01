@@ -1,8 +1,11 @@
 import openai
 import os
+import sqlite3
 import textwrap
-from anpu_storage import ConversationStorage, OntologyStorage, MindStorage
 from dotenv import load_dotenv
+from anpu_extract import extract_keywords
+from anpu_persona import get_persona
+from anpu_storage import OntologyStorage, MindStorage, ConversationStorage
 
 # Load environment variables from a .env file
 load_dotenv()
@@ -12,95 +15,135 @@ openai.api_key = os.environ.get('OPENAI_API_KEY')
 
 # Set OpenAI model and parameters
 model_engine = "text-davinci-002"
-max_tokens = 256
+max_tokens = 64
 
-# Connect to or create the conversation, ontology, and mind databases
-conversation_storage = ConversationStorage()
+# Connect to or create the ontology and mind databases
 ontology_storage = OntologyStorage()
 mind_storage = MindStorage()
+conversation_storage = ConversationStorage()
 
-# List of persona/god names to choose from
-persona_names = ["Anubis", "Osiris", "Ra", "Horus", "Set"]
+# Load stop words from a file
+stop_words_file = os.path.join(os.path.dirname(__file__), "anpu_stopwords.txt")
+with open(stop_words_file, "r") as f:
+    stop_words = set(f.read().splitlines())
 
-# Set the initial persona to be Anubis
-persona = persona_names[0]
 
-def anpu_talk(user_input, return_output=False):
-    global persona
+def generate_openai_prompt(user_input, persona_name, stop_words=None):
+    """
+    Generates an OpenAI prompt based on the user input and persona name.
+    """
+    persona = get_persona(persona_name)
+    prompt_prefix = f"{persona}\n{user_input}\n"
 
-    if not user_input:
-        # If user_input is empty, return a default response
-        default_response = "Please enter a message for me to respond to."
-        if return_output:
-            return default_response
-        else:
-            print(persona + ": " + textwrap.fill(default_response, width=100))
-            return
+    # Generate prompt suffix
+    if ontology_storage.has_ontology_topic("Egyptian mythology"):
+        prompt_suffix = "In Egyptian mythology, "
+    else:
+        prompt_suffix = ""
 
-    # Store input in the conversation database
+    # Combine the prompt prefix and suffix
+    prompt = f"{prompt_prefix}{prompt_suffix}"
+
+    return prompt
+
+
+def generate_response(user_input, persona_name="Anubis", max_tokens=50, stop_words=None, keywords=None):
+    if stop_words is None:
+        stop_words = set()
+    if keywords is None:
+        keywords = []
+
+    # rest of the function code here...
+    prompt = generate_openai_prompt(user_input, persona_name, stop_words)
+
+    # Generate response using OpenAI API
+    response = openai.Completion.create(engine=model_engine, prompt=prompt, max_tokens=max_tokens, n=3)
+
+    # Extract the response text from the API response
+    response_text = response.choices[0].text.strip()
+
+    # Store the conversation in the ontology database
+    conversation_storage.add_conversation(user_input, response_text)
+
+    # Return the response text
+    return response_text
+
+
+def improve_response_with_ontology(user_input, response_text):
+    """
+    Uses the ontology database to improve the response.
+    """
+    similar_responses = ontology_storage.get_similar_responses(user_input)
+    if similar_responses is not None:
+        similar_responses = set(similar_responses.split("\n"))
+        if response_text.strip() in similar_responses:
+            similar_responses.remove(response_text.strip())
+        if len(similar_responses) > 0:
+            response_text = similar_responses.pop()
+    return response_text
+
+
+def improve_response_with_mind(response_text, persona_name="Anubis"):
+    """
+    Uses the mind database to improve the response.
+    """
+    improved_response = mind_storage.get_similar_response(response_text, persona_name=persona_name)
+    if improved_response is not None:
+        response_text = improved_response
+    return response_text
+def store_in_ontology(user_input, response_text, ontology_storage_conn):
+    # Check if the chat_logs table exists in the ontology storage connection
+    c = ontology_storage_conn.cursor()
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='chat_logs';")
+    table_exists = c.fetchone()
+
+    if table_exists:
+        # Insert the user input and response into the chat_logs table
+        c.execute("INSERT INTO chat_logs (user_input, response_text) VALUES (?, ?)", (user_input, response_text))
+    else:
+        # Create the chat_logs table if it doesn't exist
+        c.execute('''
+                  CREATE TABLE IF NOT EXISTS chat_logs 
+                  (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                  user_input TEXT, 
+                  response_text TEXT);
+                  ''')
+        c.execute("INSERT INTO chat_logs (user_input, response_text) VALUES (?, ?)", (user_input, response_text))
+
+    # Commit the transaction
+    ontology_storage_conn.commit()
+
+def anpu_talk(user_input, persona=None, default_persona_name="Anubis"):
+    if persona is None:
+        persona_name = default_persona_name
+    else:
+        persona_name = persona
+
+    # Get keywords for the persona
+    mind_storage = MindStorage()
+    keywords_str = mind_storage.get_keywords_by_persona(persona_name)
+    keywords = keywords_str.split(",") if keywords_str else []
+
+    # Add user input to conversation log
     conversation_storage.add_conversation(user_input, "")
 
-    # Extract keywords from last input and add them to the mind database
-    keywords = extract_keywords(user_input, stop_words)
-    mind_storage.add_keywords(keywords)
+    # Check if user input matches any stored responses
+    improved_response = mind_storage.get_similar_response(user_input, persona_name=persona_name)
 
-    # Use the current persona to roleplay the response
-    prompt = f"{persona}: {user_input}\n{persona}: "
+    if improved_response:
+        conversation_storage.add_conversation(user_input, improved_response)
+        return improved_response
 
-    # Use the prompt to generate a response using OpenAI
-    response = openai.Completion.create(engine=model_engine, prompt=prompt, max_tokens=max_tokens)
+    # Otherwise, generate a new response using the persona ontology
+    response_text = generate_response(user_input, persona_name, max_tokens, stop_words, keywords)
 
-    # Store the response in the conversation database
-    conversation_storage.add_conversation("", response.choices[0].text)
+    # Improve response with ontology
+    response_text = improve_response_with_ontology(user_input, response_text)
 
-    # Store the input and output in the ontology database
-    ontology_storage.add_ontology(user_input, response.choices[0].text)
+    # Improve response with mind
+    response_text = improve_response_with_mind(response_text, persona_name)
 
-    # Use the ontology database to improve the response
-    similar_response = ontology_storage.get_similar_responses(user_input)
-    if similar_response is not None and similar_response != response.choices[0].text:
-        response_text = similar_response
-    else:
-        response_text = response.choices[0].text
+    # Add response to conversation log
+    conversation_storage.add_conversation(user_input, response_text)
 
-    # Use the mind database to improve the response further
-    keywords = mind_storage.get_keywords()
-    for keyword in keywords:
-        if keyword in response_text:
-            response_text = response_text.replace(f"[{keyword}]", keyword)
-
-    # Only include references to Egyptian mythology if the user has asked about it
-    egyptian_topics_discussed = ontology_storage.has_ontology_topic("Egyptian mythology")
-    if egyptian_topics_discussed:
-        response_text = response_text.replace("the Egyptian god of death and the afterlife", "the god of the dead")
-
-    # Store the improved response in the conversation database
-    conversation_storage.add_conversation("", response_text)
-
-    # Return the output if requested
-    if return_output:
-        return response_text
-    else:
-        # Print the response, wrapped at 100 characters
-        print(persona + ": " + textwrap.fill(response_text, width=100))
-
-
-if __name__ == "__main__":
-    while True:
-        # Prompt the user to enter a god name to switch to
-        switch_god = input("Enter a god name to switch to, or press enter to continue with the current god: ")
-
-        if switch_god:
-            # If the user entered a god name, get the corresponding persona and set it as the current persona
-            persona = get_persona(god=switch_god)
-
-        # Prompt the user to enter a message
-        mode = input("Enter 's' to use speech recognition, or 't' to type your input: ")
-        if mode == 's':
-            user_input = anpu_listen.listen()
-        else:
-            user_input = input("Enter your message: ")
-
-        # Process the user input using the current persona
-        anpu_talk(user_input)
-
+    return response_text
